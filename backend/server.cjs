@@ -14,7 +14,7 @@ const port = process.env.PORT || 5000;
 
 // Connect to MongoDB (mydb)
 const mongoURIMyDB = process.env.MONGODB_URI_MYDB;
-const mongoURIMyBlogs = process.env.MONGODB_URI_MYBLOGS;
+
 
 mongoose.connect(mongoURIMyDB, {
   useNewUrlParser: true,
@@ -27,16 +27,6 @@ mongoose.connect(mongoURIMyDB, {
   console.error('Error connecting to MongoDB (mydb):', error);
 });
 
-mongoose.connect(mongoURIMyBlogs, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('Connected to MongoDB (myblogs)');
-})
-.catch(error => {
-  console.error('Error connecting to MongoDB (myblogs):', error);
-});
 
 
 // Models for collections (ageofai, devtools, webdev, road, tools, working, and User)
@@ -124,9 +114,7 @@ app.get('/api/:collection', async (req, res) => {
   }
 });
 
-// Serving static images and videos
-app.use('/api/images', express.static('E:\\Dev Projects\\workREwork\\src\\assets'));
-app.use('/api/videos', express.static('E:\\Dev Projects\\workREwork\\src\\assets'));
+
 
 // Signup route
 app.post('/auth/signup', async (req, res) => {
