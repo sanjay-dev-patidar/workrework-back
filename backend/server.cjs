@@ -129,7 +129,7 @@ app.use('/api/images', express.static('E:\\Dev Projects\\workREwork\\src\\assets
 app.use('/api/videos', express.static('E:\\Dev Projects\\workREwork\\src\\assets'));
 
 // Signup route
-app.post('/api/auth/signup', async (req, res) => {
+app.post('/auth/signup', async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -154,7 +154,7 @@ app.post('/api/auth/signup', async (req, res) => {
 });
 
 // Login route
-app.post('/api/auth/login', async (req, res) => {
+app.post('/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
