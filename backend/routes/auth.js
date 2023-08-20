@@ -1,38 +1,32 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const router = express.Router();
-const User = require('../models/User'); // Create a User model
+const bcrypt = require('bcrypt');
+const User = require('../models/User'); // Import your User model
 
-// Signup route
 router.post('/signup', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'An error occurred' });
-  }
-});
+    const { email, password } = req.body;
 
-// Login route
-router.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ error: 'Authentication failed' });
+    // Check if the email is already registered
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
     }
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Authentication failed' });
-    }
-    const token = jwt.sign({ userId: user._id }, 'secretKey', { expiresIn: '1h' }); // Replace 'secretKey' with a strong secret key
-    res.json({ token });
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = new User({
+      email: email,
+      password: hashedPassword,
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: 'Signup successful' });
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred' });
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Signup failed' });
   }
 });
 
