@@ -3,16 +3,18 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const User = require('./models/user'); // Import your User model here
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Middleware to parse JSON data in requests
 
 const port = process.env.PORT || 5000;
 
 // Connect to MongoDB (mydb)
 const mongoURIMyDB = process.env.MONGODB_URI_MYDB;
+const mongoURIMyBlogs = process.env.MONGODB_URI_MYBLOGS;
 
 mongoose.connect(mongoURIMyDB, {
   useNewUrlParser: true,
@@ -24,6 +26,18 @@ mongoose.connect(mongoURIMyDB, {
 .catch(error => {
   console.error('Error connecting to MongoDB (mydb):', error);
 });
+
+mongoose.connect(mongoURIMyBlogs, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('Connected to MongoDB (myblogs)');
+})
+.catch(error => {
+  console.error('Error connecting to MongoDB (myblogs):', error);
+});
+
 
 // Models for collections (ageofai, devtools, webdev, road, tools, working, and User)
 const AgeOfAI = mongoose.model('ageofai', {
@@ -72,71 +86,6 @@ const Working = mongoose.model('working', {
   videoURL: [String],
 });
 
-const User = mongoose.model('User', {
-  username: String,
-  password: String,
-});
-
-// Generate a random and secure secret key for JWT
-const generateSecretKey = () => {
-  const randomBytes = require('crypto').randomBytes(32);
-  return randomBytes.toString('hex');
-};
-
-const jwtSecretKey = generateSecretKey();
-
-// Authentication Routes
-
-app.post('/api/signup', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, password: hashedPassword });
-    await user.save();
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'An error occurred' });
-  }
-});
-
-app.post('/api/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ error: 'Authentication failed' });
-    }
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Authentication failed' });
-    }
-    const token = jwt.sign({ userId: user._id }, jwtSecretKey, { expiresIn: '1h' });
-    res.json({ token });
-  } catch (error) {
-    res.status(500).json({ error: 'An error occurred' });
-  }
-});
-
-// Protected Routes
-
-const verifyToken = (req, res, next) => {
-  const token = req.header('Authorization');
-  if (!token) {
-    return res.status(401).json({ error: 'Access denied' });
-  }
-  try {
-    const decoded = jwt.verify(token, jwtSecretKey);
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-};
-
-app.get('/api/protected', verifyToken, (req, res) => {
-  // Handle the protected route here
-  res.json({ message: 'This is a protected route' });
-});
 
 // Routes for all collections
 app.get('/api/:collection', async (req, res) => {
@@ -179,6 +128,62 @@ app.get('/api/:collection', async (req, res) => {
 app.use('/api/images', express.static('E:\\Dev Projects\\workREwork\\src\\assets'));
 app.use('/api/videos', express.static('E:\\Dev Projects\\workREwork\\src\\assets'));
 
+// Signup route
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+
+    res.json({ message: 'Signup successful' });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'An error occurred during signup' });
+  }
+});
+
+// Login route
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Find the user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid username or password' });
+    }
+
+    // Compare the password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(400).json({ error: 'Invalid username or password' });
+    }
+
+    // Generate a JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h', // Token expires in 1 hour
+    });
+
+    res.json({ token });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'An error occurred during login' });
+  }
+});
+
+// ...
+
 // Default route
 app.get('/', (req, res) => {
   res.send('Welcome to My API');
@@ -191,7 +196,7 @@ app.use((req, res) => {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Backend server is running on port ${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
 
 // Listen for MongoDB collection events
