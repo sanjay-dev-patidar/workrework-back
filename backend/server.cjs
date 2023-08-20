@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('./models/user'); // Import your User model here
+const User = require('./models/User'); // Import your User model here
 require('dotenv').config();
 
 const app = express();
