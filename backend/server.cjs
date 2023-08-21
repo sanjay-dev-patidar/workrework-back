@@ -19,12 +19,12 @@ mongoose.connect(mongoURIMyDB, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => {
-  console.log('Connected to MongoDB (mydb)');
-})
-.catch(error => {
-  console.error('Error connecting to MongoDB (mydb):', error);
-});
+  .then(() => {
+    console.log('Connected to MongoDB (mydb)');
+  })
+  .catch(error => {
+    console.error('Error connecting to MongoDB (mydb):', error);
+  });
 
 // Models for collections (ageofai, devtools, webdev, road, tools, working, and User)
 const AgeOfAI = mongoose.model('ageofai', {
@@ -174,10 +174,9 @@ app.get('/', (req, res) => {
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
-
 // Start the server
 app.listen(port, () => {
- console.log(`Backend server is running on port ${port}`);
+  console.log(`Backend server is running on port ${port}`);
 });
 
 // Listen for MongoDB collection events
