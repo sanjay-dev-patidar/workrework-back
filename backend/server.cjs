@@ -15,7 +15,6 @@ const port = process.env.PORT || 5000;
 // Connect to MongoDB (mydb)
 const mongoURIMyDB = process.env.MONGODB_URI_MYDB;
 
-
 mongoose.connect(mongoURIMyDB, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -26,8 +25,6 @@ mongoose.connect(mongoURIMyDB, {
 .catch(error => {
   console.error('Error connecting to MongoDB (mydb):', error);
 });
-
-
 
 // Models for collections (ageofai, devtools, webdev, road, tools, working, and User)
 const AgeOfAI = mongoose.model('ageofai', {
@@ -77,7 +74,60 @@ const Working = mongoose.model('working', {
 });
 
 
-// Routes for all collections
+// Signup route
+app.post('/auth/signup', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = new User({ username, password: hashedPassword });
+    await newUser.save();
+
+    res.json({ message: 'Signup successful' });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'An error occurred during signup' });
+  }
+});
+
+// Login route
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Find the user
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid username or password' });
+    }
+
+    // Compare the password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(400).json({ error: 'Invalid username or password' });
+    }
+
+    // Generate a JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h', // Token expires in 1 hour
+    });
+
+    res.json({ token });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'An error occurred during login' });
+  }
+});
+
 app.get('/api/:collection', async (req, res) => {
   const collection = req.params.collection;
   try {
@@ -114,63 +164,6 @@ app.get('/api/:collection', async (req, res) => {
   }
 });
 
-
-
-// Signup route
-app.post('auth/signup', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Check if username already exists
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Username already exists' });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create a new user
-    const newUser = new User({ username, password: hashedPassword });
-    await newUser.save();
-
-    res.json({ message: 'Signup successful' });
-  } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ error: 'An error occurred during signup' });
-  }
-});
-
-// Login route
-app.post('auth/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Find the user
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ error: 'Invalid username or password' });
-    }
-
-    // Compare the password
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(400).json({ error: 'Invalid username or password' });
-    }
-
-    // Generate a JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h', // Token expires in 1 hour
-    });
-
-    res.json({ token });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'An error occurred during login' });
-  }
-});
-
-// ...
 
 // Default route
 app.get('/', (req, res) => {
