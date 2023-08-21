@@ -117,7 +117,7 @@ app.get('/api/:collection', async (req, res) => {
 
 
 // Signup route
-app.post('/auth/signup', async (req, res) => {
+app.post('auth/signup', async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -142,7 +142,7 @@ app.post('/auth/signup', async (req, res) => {
 });
 
 // Login route
-app.post('/auth/login', async (req, res) => {
+app.post('auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
